@@ -1,6 +1,6 @@
 // 判断变量否为function
 const isFunction = variable => typeof variable === 'function'
-// 定义Promise的三种状态常量
+// // 定义Promise的三种状态常量
 const PENDING = 'PENDING'
 const FULFILLED = 'FULFILLED'
 const REJECTED = 'REJECTED'
@@ -197,3 +197,18 @@ class MyPromise {
         );
     }
 }
+var promise1 = new MyPromise(function(resolve, reject) {
+    // 2秒后置为接收状态
+    setTimeout(function() {
+        resolve('success');
+    }, 2000);
+});
+promise1.then(function(data) {
+    resolve('fwfw')
+    console.log(data); // success
+}, function(err) {
+    console.log(err); // 不执行
+}).then(function(data) {
+    // 上一步的then()方法没有返回值
+    console.log('链式调用：' + data); // 链式调用：undefined
+})
