@@ -25,4 +25,8 @@ constructor(resolver){
     }
 }
 }
-let a = new Promise()
+let a = new Promise(function(resolve,reject){
+    setTimeout(()=>{  resolve(a)},100)
+
+})
+
