@@ -6,12 +6,29 @@ function noop(){
 const PENDING   = void 0;
 const FULFILLED = 1;
 const REJECTED  = 2;
+
+function selfFulfillment(){
+    return new TypeError("You cannot resolve a promise with itself");
+}
+
+
+
 function resolve(promise,value){
     console.log(promise,value)
-    console.log(promise === value)
-if(promise === value){
-    reject(promise, selfFulfillment());
+     if(promise === value){
+       reject(promise, selfFulfillment());
+     } else if(objectOrFunction(value)){
+        handleMaybeThenable(promise,value,getThen(value))
+     } else{
+        fulfill(promise, value)
+     }
 }
+
+function pulishRejection(promise){
+    if(promise._onerror){
+        promise._onerror(promise._result);
+    }
+    publish(promise);
 }
 function reject(promise,reason){
     if(promise._state !== PENDING){return;}
