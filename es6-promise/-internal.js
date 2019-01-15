@@ -1,3 +1,6 @@
+import {
+    objectOrFunction
+} from './utils'
 //产生随机Idjs 直接写import不能用
 export const PROMISE_ID = Math.random().toString(36).substring(2)
 
@@ -11,7 +14,13 @@ function selfFulfillment(){
     return new TypeError("You cannot resolve a promise with itself");
 }
 
+function handleMaybeThenable(promise,maybeThenable,then){
+    if(maybeThenable.constructor === promise.constructor && then===originalThen && maybeThenable.constructor.resolve === originalResolve){
+        handleOwnThenable(promise, maybeThenable);
+    }else{
 
+    }
+}
 
 function resolve(promise,value){
     console.log(promise,value)
@@ -29,6 +38,14 @@ function pulishRejection(promise){
         promise._onerror(promise._result);
     }
     publish(promise);
+}
+function fulfill(promise,value){
+    if(promise._state !== PENDING){return;}
+    promise._result = value;
+    promise._state = FULFILLED;
+    if (promise._subscribers.length !== 0) {
+        asap(publish, promise);
+    }
 }
 function reject(promise,reason){
     if(promise._state !== PENDING){return;}
