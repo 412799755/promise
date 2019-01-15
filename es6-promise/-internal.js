@@ -1,6 +1,12 @@
 import {
-    objectOrFunction
+    objectOrFunction,
+    isFunction
 } from './utils'
+import {
+    asap
+} from "./asap";
+
+
 //产生随机Idjs 直接写import不能用
 export const PROMISE_ID = Math.random().toString(36).substring(2)
 
