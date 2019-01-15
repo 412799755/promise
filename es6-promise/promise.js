@@ -1,10 +1,19 @@
 import {
+    isFunction
+} from './utils.js';
+import {
     noop,
     nextId,
     PROMISE_ID,
     initializePromise
 } from './-internal.js';
+import {
+    asap,
+    setAsap,
+    setScheduler
+} from './asap.js';
 
+import then from './then.js';
 
 function needsResolver() {
     throw new TypeError('You must pass a resolver function as the first argument to the promise constructor');
@@ -25,6 +34,9 @@ constructor(resolver){
     }
 }
 }
+Promise.prototype.then = then;
+export default Promise;
+console.log(PROMISE_ID)
 let a = new Promise(function(resolve,reject){
     setTimeout(()=>{  resolve(a)},100)
 

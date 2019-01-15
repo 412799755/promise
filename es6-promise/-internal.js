@@ -1,10 +1,10 @@
 import {
     objectOrFunction,
     isFunction
-} from './utils'
+} from './utils.js'
 import {
     asap
-} from "./asap";
+} from "./asap.js";
 
 
 //产生随机Idjs 直接写import不能用
@@ -18,6 +18,15 @@ const REJECTED  = 2;
 
 function selfFulfillment(){
     return new TypeError("You cannot resolve a promise with itself");
+}
+
+function getThen(promise) {
+    try {
+        return promise.then;
+    } catch(error) {
+        TRY_CATCH_ERROR.error = error;
+        return TRY_CATCH_ERROR;
+    }
 }
 
 function handleMaybeThenable(promise,maybeThenable,then){
@@ -37,6 +46,14 @@ function resolve(promise,value){
      } else{
         fulfill(promise, value)
      }
+}
+
+function publishRejection(promise) {
+    if (promise._onerror) {
+        promise._onerror(promise._result);
+    }
+
+    publish(promise);
 }
 
 function pulishRejection(promise){
@@ -59,6 +76,90 @@ function reject(promise,reason){
     promise._result = reason;
     asap(publishRejection, promise);
 }
+function subscribe(parent, child, onFulfillment, onRejection) {
+    let { _subscribers } = parent;
+    let { length } = _subscribers;
+
+    parent._onerror = null;
+
+    _subscribers[length] = child;
+    _subscribers[length + FULFILLED] = onFulfillment;
+    _subscribers[length + REJECTED]  = onRejection;
+
+    if (length === 0 && parent._state) {
+        asap(publish, parent);
+    }
+}
+
+function publish(promise) {
+    let subscribers = promise._subscribers;
+    let settled = promise._state;
+
+    if (subscribers.length === 0) { return; }
+
+    let child, callback, detail = promise._result;
+
+    for (let i = 0; i < subscribers.length; i += 3) {
+        child = subscribers[i];
+        callback = subscribers[i + settled];
+
+        if (child) {
+            invokeCallback(settled, child, callback, detail);
+        } else {
+            callback(detail);
+        }
+    }
+
+    promise._subscribers.length = 0;
+}
+
+
+function tryCatch(callback, detail) {
+    try {
+        return callback(detail);
+    } catch(e) {
+        TRY_CATCH_ERROR.error = e;
+        return TRY_CATCH_ERROR;
+    }
+}
+
+function invokeCallback(settled, promise, callback, detail) {
+    let hasCallback = isFunction(callback),
+        value, error, succeeded, failed;
+
+    if (hasCallback) {
+        value = tryCatch(callback, detail);
+
+        if (value === TRY_CATCH_ERROR) {
+            failed = true;
+            error = value.error;
+            value.error = null;
+        } else {
+            succeeded = true;
+        }
+
+        if (promise === value) {
+            reject(promise, cannotReturnOwn());
+            return;
+        }
+
+    } else {
+        value = detail;
+        succeeded = true;
+    }
+
+    if (promise._state !== PENDING) {
+        // noop
+    } else if (hasCallback && succeeded) {
+        resolve(promise, value);
+    } else if (failed) {
+        reject(promise, error);
+    } else if (settled === FULFILLED) {
+        fulfill(promise, value);
+    } else if (settled === REJECTED) {
+        reject(promise, value);
+    }
+}
 function initializePromise(promise,resolver) {
 
     try{
@@ -77,8 +178,27 @@ let id = 0
 function nextId() {
 return id++
 }
+function makePromise(promise) {
+    promise[PROMISE_ID] = id++;
+    promise._state = undefined;
+    promise._result = undefined;
+    promise._subscribers = [];
+}
 export {
     nextId,
+    makePromise,
+    getThen,
+    noop,
+    resolve,
+    reject,
+    fulfill,
+    subscribe,
+    publish,
+    publishRejection,
     initializePromise,
-    noop
+    invokeCallback,
+    FULFILLED,
+    REJECTED,
+    PENDING,
+    handleMaybeThenable
 }
